@@ -1,0 +1,78 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.1                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      createBafflesDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Whether to convert internal faces only (so leave boundary faces intact).
+// This is only relevant if your face selection type can pick up boundary
+// faces.
+internalFacesOnly false;
+
+// Baffles to create.
+baffles
+{
+	electrode1_contact
+	{
+        //- Use predefined faceZone to select faces and orientation.
+        type        faceZone;
+        zoneName    faceZone_0;   
+
+        patchPairs
+        {
+            type            patch;
+
+            patchFields
+            {
+                sigma
+                {
+                    type		fixedValue;
+		    value   		uniform 7777;
+                }
+                
+		ElPot
+                {
+                    type        fixedValue;
+                    value       uniform -5;
+                }
+            }
+        }
+    }
+
+	electode2_contact
+	{
+        //- Use predefined faceZone to select faces and orientation.
+        type        faceZone;
+        zoneName    faceZone_1;   
+
+        patchPairs
+        {
+            type            patch;
+
+            patchFields
+            {
+                sigma
+                {
+                    type		fixedValue;
+        	    value   		uniform 7777;
+                }
+
+		ElPot
+                {
+                    type        fixedValue;
+                    value       uniform 5;
+                }
+            }
+        }
+    }
+}

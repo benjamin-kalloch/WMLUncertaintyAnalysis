@@ -1,0 +1,9 @@
+1) midlayer.stl in root-Verzeichnis
+2) transformPoints (runterskalieren 0.001)
+3) surfaceTransformPoints (midlayer auch runterskalieren auf 0.001)
+4) renumberMesh
+5) setFields mit 1111,2222 etc. Werten
+6) Ersetze 1111,2222,... durch %SKIN_VAL%...
+7) Field_template anlegen
+8) runSim.sh einfügen 
+9) interpolate_to_midlayer_and_retrieve_values.sh einfügen

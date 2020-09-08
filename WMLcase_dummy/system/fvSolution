@@ -1,0 +1,57 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.1                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+	version	2.0;
+	format	ascii;
+	class	dictionary;
+	object	fvSolution;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+	ElPot
+	{
+		solver			PCG;        // preconditioned-conjugate-gradient solver (for symmetrical matrices)
+		preconditioner	FDIC;        // precondition the matrix using the diagonal incomplete-cholesky preconditioner (again only for symmetric matrices)
+		tolerance		1e-06;	    // the lower bound of the residual at each step; if the residual falls below this value, the solver stops as the result is (hopefully) accurate enough
+		relTol			0;          // the relative improvement from initial to the final solution
+        maxIter         50000;      // the maximum number of solving-iterations; the solver stops when eiter exceeding this value or falling below tolerance
+	    minIter         3;
+    };
+
+	E
+	{
+		solver			PCG;
+		preconditioner	DIC;
+		tolerance		1e-06;
+		relTol			0;
+	};
+}
+
+SIMPLE
+{
+	nNonOrthogonalCorrectors 2;
+		
+	residualControl
+	{
+		ElPot	1e-05;
+	}
+}
+
+relaxationFactors
+{
+	fields
+	{
+		ElPot	1.0;
+	}
+}
+

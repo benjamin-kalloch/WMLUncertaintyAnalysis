@@ -1,0 +1,76 @@
+<ServerManagerConfiguration>
+  <ProxyGroup name="filters">
+    <SourceProxy name="InterpolateToSurfaceFilter" class="vtkInterpolateToSurfaceFilter" label="Interpolate to surface">
+
+      <Documentation
+     long_help="Interpolates a field of cell-data onto a surface as point-data."
+     short_help="Interpolate field cell-data to surface point-data.">
+        Interpolates a field of cell-data onto a surface as point-data.
+      </Documentation>
+
+      <InputProperty
+         name="SurfaceInput"
+         port_inex="0"
+         command="SetInputConnection"
+         multiple_input="1">
+        <ProxyGroupDomain name="groups">
+          <Group name="sources"/>
+          <Group name="filters"/>
+        </ProxyGroupDomain>
+        <DataTypeDomain name="input_type">
+          <DataType value="vtkPolyData"/>
+        </DataTypeDomain>
+        <Documentation>
+            This property specifies the surface to interpolate the values to.
+        </Documentation>
+      </InputProperty>
+
+      <InputProperty
+         name="FieldData"
+         port_index="1"
+         command="SetInputConnection"
+         multiple_input="1">
+        <ProxyGroupDomain name="groups">
+          <Group name="sources"/>
+          <Group name="filters"/>
+        </ProxyGroupDomain>
+        <DataTypeDomain name="input_type">
+          <DataType value="vtkDataSet"/>
+        </DataTypeDomain>
+        <InputArrayDomain name="input_array" attribute_type="cell" number_of_components="any" />
+        <Documentation>
+            This property specifies the field-data (cell-data).
+        </Documentation>
+      </InputProperty>
+
+      <Hints>
+           <ShowInMenu category="Surface Processing" />
+      </Hints>
+
+      <StringVectorProperty name="SelectInputScalars"
+                            label="Field to transfer"
+                            command="SetInputArrayToProcess"
+                            number_of_elements="5"
+                            element_types="0 0 0 0 2"
+                            animateable="0">
+        <ArrayListDomain name="array_list"
+            attribute_type="Scalars">
+            <RequiredProperties>
+                <Property name="FieldData"
+                          function="Input" />
+            </RequiredProperties>
+        </ArrayListDomain>
+       <!-- In versions of ParaView greater than 5.6, the FieldDataDomain element is not needed. -->
+        <FieldDataDomain name="field_list">
+          <RequiredProperties>
+            <Property name="FieldData"
+                      function="Input" />
+          </RequiredProperties>
+        </FieldDataDomain>
+      </StringVectorProperty>
+
+
+    </SourceProxy>
+
+  </ProxyGroup>
+</ServerManagerConfiguration>

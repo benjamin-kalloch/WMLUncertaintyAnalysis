@@ -14,6 +14,10 @@ library(methods)
 library(car)
 library(coin)
 library(stats)
+library(sjstats) # anova effect size "anova_stats" function
+library(rstatix) # kruskall wallis effect size
+library(effsize)
+library(rcompanion)
 
 #
 # This class reads in a sequence of CSV files, stacks the included data
@@ -42,17 +46,17 @@ DataProvider <- setRefClass(
             input_CSVs <<- list_of_input_CSVs;
 
             input <- list()
-            for( i in seq_along(input_CSVs) ){
+            for( i in seq(input_CSVs) ){
                 input[[i]] <- tryCatch(read.csv( file=input_CSVs[[i]] ), error=function(e){print("File does not exist! Skipping input file")})
 
                 # add a group column to this dataframe to identify which
                 # group it is coming from
                 if( is_grouped ) {
-                    input[[i]]$group <- as.factor(i)
+                    input[[i]]$group <- as.factor(i-1)
                 }
             }
 
-            stacked_input   <<- rbindlist( input, use.names=TRUE );
+            stacked_input   <<- rbindlist( input, use.names=TRUE, fill=TRUE );
             trimmed_input   <<- stacked_input;
             data_is_grouped <<- is_grouped;
         },
@@ -100,23 +104,31 @@ plot = function(
     output_path,
     file_name )
 {
+    scale_function <- scale_y_continuous
+
     if( use_log_scale ){
-        scale_function <- function(){ scale_y_log10(name = y_axis_title,labels = scales::comma, breaks=base_breaks()) }
-    }
-    else{
-        scale_function <- waiver
+        #scale_function <- function(){ scale_y_log10(name = y_axis_title,labels = scales::comma, breaks=base_breaks()) }
+        scale_function <- function(){ scale_y_log10(name = y_axis_title,breaks=base_breaks()) }
     }
 
-    ggplot( data, aes( x=variable, y=value, fill=factor(group)) ) +
+    # use the following 4 lines to create a common lower boundary (1e-9) for the "all-tissues"-Sobl inxed plots
+    group<-rep(0,5)
+    variable<-as.factor(c('Skin', 'Skull', 'Cerebrospinal fluid', 'Gray matter', 'White matter'))
+    value<-rep(1.8e-9, 5)
+    dummy_data<-data.frame(group, variable, value)
+
+    ggplot( data, aes( x=variable, y=value, fill=factor(group), ordered=TRUE) ) +
     geom_boxplot(alpha=.9, outlier.shape = 32) +
+    scale_function()+
     labs(fill = "group", title=main_title, subtitle=sub_title )+
     guides(fill=guide_legend(title=legend_title))+
-    geom_point(position=position_jitterdodge(jitter.width=.25), alpha=0.3) +
+    geom_point(position=position_jitterdodge(jitter.width=.25), alpha=0.3, data=data[ with(data, ! is.na(value)), ] ) +
+    geom_point(data=dummy_data, aes(x=variable, y=value), color="darkorange3", alpha=0, guide=FALSE, position=position_jitterdodge(jitter.width=.25)) +
     theme_bw() +
     theme(plot.title = element_text(lineheight=.8, size = 18, face="bold", hjust = 0.5),axis.title=element_text(size=14, face="italic"))+
-    scale_function()+
     annotation_logticks(sides="l") +
     scale_x_discrete(name = x_axis_title) +
+    expand_limits( y = c(0,0.002) ) +
     scale_fill_brewer(palette = "Greens")
 
     ggsave(file_name, plot=last_plot(), device="pdf", path=output_path, dpi=300)
@@ -156,10 +168,10 @@ if( length(args) == 0 )
 reader <- DataProvider( args, TRUE );
 all_data <- reader$stacked_input
 all_data$subjectID <- NULL
-
+if(FALSE){
 ## show means and variance and standard deviations
 cat( "##### DESCRIPTIVE STATISTICS #####\n" )
-for(fazekas_score in c(1,2,3)){
+for(fazekas_score in c(0,1,2,3)){
     cat("*** Fazekas ",fazekas_score," ***\n")
     cat(" - Electrical field strength\n")
     cat("\tmean=",mean(all_data$mean[all_data$group == fazekas_score]),"\n")
@@ -200,7 +212,7 @@ cat( "##### SIGNIFICANCE TESTS #####" )
 # normality
 sapply( all_data, function( col ) shapiro.test( as.numeric(col)) )
 for(col in setdiff(names(all_data), "group")){
-    pdf(paste( OUTPUT_DIR,"qqplot_",col,".pdf"));
+    pdf(paste( OUTPUT_DIR,"qqplot_",col,".pdf", sep=""));
     qqnorm(all_data[[col]]);
     dev.off();
 }
@@ -211,16 +223,22 @@ apply(all_data, 2, function(x) leveneTest( y = as.numeric(x), group = all_data$g
 # parametric test: ANOVA
 lapply(setdiff(names(all_data), "group"), function( col ) {
     print(paste0( "Dataset: ", col ));
-    summary(aov( as.formula( paste( col, " ~ group") ), all_data));
+    fit<-aov( as.formula( paste( col, " ~ group") ), all_data);
+    print(anova_stats(fit)) # explicitly printing this causes a double console output - no big deal
+    print(cohens_d(all_data, as.formula( paste( col, " ~ group")), paired=TRUE ))
 })
 
 # non-parametric test: Kruskal–Wallis one-way analysis of variance
 # as an alternative to the Mann-Whitney-U test with more than two groups
 lapply(setdiff(names(all_data), "group"), function( col ) {
     print(paste0( "Dataset: ", col ));
-    kruskal.test( as.formula( paste( col, " ~ group") ), all_data);
+    print(kruskal.test( as.formula( paste( col, " ~ group") ), all_data))
+    print(kruskal_effsize(all_data,as.formula( paste( col, " ~ group")))) # explicitly printing this causes a double console output - no big deal
 })
 
+############### Early quitting to skip plotting!!! #############################
+#quit()
+}
 ## plotting ##
 # [1] contributions of all tissues
 reader$trimStackedColumns( c("scalp","skull","csf","gm","wm","lesion") );
@@ -241,16 +259,26 @@ to_be_plotted <- rename_columns( to_be_plotted );
 #   2) variable-name column,
 #   3) data column
 # => Data from multiple variables will be stacked.
-
-
-
 to_be_plotted=melt(to_be_plotted,id.vars='group');
+
+ordering_row_idx<-c(    # create a list of indices in the order that we want
+    c(which(to_be_plotted$variable == "Skin")),
+    c(which(to_be_plotted$variable == "Skull")),
+    c(which(to_be_plotted$variable == "Cerebrospinal fluid")),
+    c(which(to_be_plotted$variable == "Gray matter")),
+    c(which(to_be_plotted$variable == "White matter")),
+    c(which(to_be_plotted$variable == "Lesion"))
+)
+to_be_plotted<-to_be_plotted[ordering_row_idx,]
+#to_be_plotted<-to_be_plotted[order(as.character(to_be_plotted$variable)),] # for alphabetical ordering
+to_be_plotted$variable <- factor(to_be_plotted$variable, levels=unique(to_be_plotted$variable)) # must be marked as factor so ggplot will order it alphabetically...
+
 
 plot(
     data = to_be_plotted,
     use_log_scale = USE_LOG_SCALE,
     main_title = "Contribution of individual tissue to total variance",
-    sub_title = "Groups: Fazekas 1 vs. 2 vs. 3",
+    sub_title = "Groups: Fazekas 0 vs. 1 vs. 2 vs. 3",
     legend_title = "Fazekas\nscore",
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
@@ -268,7 +296,7 @@ plot(
     data = to_be_plotted,
     use_log_scale = USE_LOG_SCALE,
     main_title = "Contribution of scalp tissue to total variance",
-    sub_title = "Groups: Fazekas 1 vs. 2 vs. 3",
+    sub_title = "Groups: Fazekas 0 vs. 1 vs. 2 vs. 3",
     legend_title = "Fazekas\nscore",
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
@@ -304,7 +332,7 @@ plot(
     data = to_be_plotted,
     use_log_scale = USE_LOG_SCALE,
     main_title = "Contribution of cerebrospinal-fluid to total variance",
-    sub_title = "Groups: Fazekas 1 vs. 2 vs. 3",
+    sub_title = "Groups: Fazekas 0 vs. 1 vs. 2 vs. 3",
     legend_title = "Fazekas\nscore",
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
@@ -322,7 +350,7 @@ plot(
     data = to_be_plotted,
     use_log_scale = USE_LOG_SCALE,
     main_title = "Contribution of gray matter tissue to total variance",
-    sub_title = "Groups: Fazekas 1 vs. 2 vs. 3",
+    sub_title = "Groups: Fazekas 0 vs. 1 vs. 2 vs. 3",
     legend_title = "Fazekas\nscore",
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
@@ -340,7 +368,7 @@ plot(
     data = to_be_plotted,
     use_log_scale = USE_LOG_SCALE,
     main_title = "Contribution of whate matter tissue to total variance",
-    sub_title = "Groups: Fazekas 1 vs. 2 vs. 3",
+    sub_title = "Groups: Fazekas 0 vs. 1 vs. 2 vs. 3",
     legend_title = "Fazekas\nscore",
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
@@ -358,7 +386,7 @@ plot(
     data = to_be_plotted,
     use_log_scale = USE_LOG_SCALE,
     main_title = "Contribution of lesioned tissue to total variance",
-    sub_title = "Groups: Fazekas 1 vs. 2 vs. 3",
+    sub_title = "Groups: 1 vs. 2 vs. 3",
     legend_title = "Fazekas\nscore",
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
@@ -376,7 +404,7 @@ plot(
     data = to_be_plotted,
     use_log_scale = USE_LOG_SCALE,
     main_title = "Mean electrical field strength in ROI",
-    sub_title = "Groups: Fazekas 1 vs. 2 vs. 3",
+    sub_title = "Groups: Fazekas 0 vs. 1 vs. 2 vs. 3",
     legend_title = "Fazekas\nscore",
     y_axis_title = "Electrical field strength",
     x_axis_title = "",
@@ -394,7 +422,7 @@ plot(
     data = to_be_plotted,
     use_log_scale = USE_LOG_SCALE,
     main_title = "Variance of the electrical field strength in ROI",
-    sub_title = "Groups: Fazekas 1 vs. 2 vs. 3",
+    sub_title = "Groups: Fazekas 0 vs. 1 vs. 2 vs. 3",
     legend_title = "Fazekas\nscore",
     y_axis_title = "Variance of the electrical field strength",
     x_axis_title = "",

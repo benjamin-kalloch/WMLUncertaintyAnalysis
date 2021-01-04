@@ -1,0 +1,48 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.1                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+	version		2.0;
+	format		ascii;
+	class		dictionary;
+	object		controlDict;
+}
+
+application		TDCSSolver;
+
+startFrom		startTime;	    // start at timeStep 0 (defined by 'startTime')
+
+startTime		0;
+
+stopAt			endTime;	    // end at timeStep 100 (defined by 'endTime')
+
+endTime			100;
+
+deltaT			1;			    // we have a steady state case here, hence time control is not that important
+							    // timesteps just act as a iteration counter here
+writeControl	timeStep;	    // write data every 100 timesteps (defined by 'writeInterval')
+
+writeInterval	100;
+
+purgeWrite		0;			    // disable time directory limit
+
+writeFormat		ascii;		    // binary is possible as well
+
+writePrecision	6;			    // write 6 significant figures (6 = default value)
+
+writeCompression uncompressed;	// gzip compression is possible as well
+
+timeFormat		general;
+
+timePrecision	6;			    // timesteps may have a maximim resolution of x.dddddd, where the no. of 'd' is specified here
+
+graphFormat		raw;
+
+runTimeModifiable yes;		    // yes: dictionaries (e.g. this one 'controlDict') are re-read by OpenFOAM
+                                //      at the beginning of each time step
+// *************************************************************************** //

@@ -1,0 +1,117 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.1                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+	version	2.0;
+	format	ascii;
+	class	dictionary;
+	object	setFieldsDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+defaultFieldValues
+(
+	volScalarFieldValue sigma 1e-15
+);
+
+regions
+(
+	zoneToCell
+	{	
+		name cellZone_0;    // ventricles, label 2 in ANALYZE image
+
+		fieldValues
+		(
+			volScalarFieldValue sigma 2222
+		);
+	}
+
+	zoneToCell
+	{	
+		name cellZone_1;    // air, label 3 in ANALYZE image
+
+		fieldValues
+		(
+			volScalarFieldValue sigma 3333
+		);
+	}
+
+	zoneToCell
+	{	
+		name cellZone_2;    // skin
+
+		fieldValues
+		(
+			volScalarFieldValue sigma 4444
+		);
+	}
+	
+	zoneToCell
+	{	
+		name cellZone_3;    // skull
+
+		fieldValues
+		(
+			volScalarFieldValue sigma 5555
+		);
+	}
+
+	zoneToCell
+	{	
+		name cellZone_4;    // cerebrospinal fluid
+
+		fieldValues
+		(
+			volScalarFieldValue sigma 6666
+        	);
+	}
+
+	zoneToCell
+	{	
+		name cellZone_5;    // gray matter
+
+		fieldValues
+		(
+			volScalarFieldValue sigma 9999
+        	);
+	}
+
+	zoneToCell
+	{	
+		name cellZone_6;    // white matter
+
+		fieldValues
+		(
+			volScalarFieldValue sigma 7777
+		);
+	}
+	
+	zoneToCell
+	{	
+		name cellZone_7;    // electrodes
+
+		fieldValues
+		(
+			volScalarFieldValue sigma 8888
+        );
+	}
+
+	zoneToCell
+	{	
+		name cellZone_8;    // electrodes
+
+		fieldValues
+		(
+			volScalarFieldValue sigma 8888
+        );
+	}
+);
+
+// *************************************************************************** //

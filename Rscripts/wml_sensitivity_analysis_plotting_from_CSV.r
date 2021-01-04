@@ -102,7 +102,9 @@ plot = function(
     y_axis_title,
     x_axis_title,
     output_path,
-    file_name )
+    file_name,
+    y_axis_min,
+    y_axis_max)
 {
     scale_function <- scale_y_continuous
 
@@ -111,12 +113,29 @@ plot = function(
         scale_function <- function(){ scale_y_log10(name = y_axis_title,breaks=base_breaks()) }
     }
 
+    if(missing(y_axis_min)){
+        min_y<-min(data$value)
+    }
+    else{
+        min_y<-y_axis_min;
+    }
+    
+    if(missing(y_axis_max)){
+        max_y<-max(data$value)
+    }
+    else{
+        max_y<-y_axis_max;
+    }
+    
+    
     # use the following 4 lines to create a common lower boundary (1e-9) for the "all-tissues"-Sobl inxed plots
-    group<-rep(0,5)
-    variable<-as.factor(c('Skin', 'Skull', 'Cerebrospinal fluid', 'Gray matter', 'White matter'))
-    value<-rep(1.8e-9, 5)
+    variable_names<-unique(data$variable)
+    num_variable_names<-length(variable_names)
+    group<-rep(0,num_variable_names)
+    variable<-as.factor(variable_names)
+    value<-rep(min_y+1.8e-9, num_variable_names)
     dummy_data<-data.frame(group, variable, value)
-
+    
     ggplot( data, aes( x=variable, y=value, fill=factor(group), ordered=TRUE) ) +
     geom_boxplot(alpha=.9, outlier.shape = 32) +
     scale_function()+
@@ -128,7 +147,7 @@ plot = function(
     theme(plot.title = element_text(lineheight=.8, size = 18, face="bold", hjust = 0.5),axis.title=element_text(size=14, face="italic"))+
     annotation_logticks(sides="l") +
     scale_x_discrete(name = x_axis_title) +
-    expand_limits( y = c(0,0.002) ) +
+    expand_limits( y = c(min_y,max_y) ) +
     scale_fill_brewer(palette = "Greens")
 
     ggsave(file_name, plot=last_plot(), device="pdf", path=output_path, dpi=300)
@@ -155,8 +174,8 @@ rename_columns = function( data_frame ) {
 # MAIN #
 ########
 DISPLAY_IN_PERCENT=FALSE
-OUTPUT_DIR="/temp/"
-USE_LOG_SCALE=TRUE
+OUTPUT_DIR="/home/benny/ram_folder/"
+USE_LOG_SCALE=FALSE
 
 args = commandArgs(trailingOnly=TRUE)
 
@@ -168,7 +187,7 @@ if( length(args) == 0 )
 reader <- DataProvider( args, TRUE );
 all_data <- reader$stacked_input
 all_data$subjectID <- NULL
-if(FALSE){
+if(TRUE){
 ## show means and variance and standard deviations
 cat( "##### DESCRIPTIVE STATISTICS #####\n" )
 for(fazekas_score in c(0,1,2,3)){
@@ -283,11 +302,14 @@ plot(
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
     output_path = OUTPUT_DIR,
-    file_name = "contributions_of_all_tissues.pdf"
+    file_name = "contributions_of_all_tissues.pdf",
+    y_axis_min = 0,
+    y_axis_max = 0.002
 );
 
 # [2] contributions of scalp only
 reader$trimStackedColumns( c("scalp") );
+
 to_be_plotted <- reader$trimmed_input;
 to_be_plotted <- rename_columns( to_be_plotted );
 to_be_plotted=melt(to_be_plotted,id.vars='group');
@@ -301,7 +323,9 @@ plot(
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
     output_path = OUTPUT_DIR,
-    file_name = "contributions_of_scalp_tissues.pdf"
+    file_name = "contributions_of_scalp_tissues.pdf",
+    y_axis_min = 0,
+    y_axis_max = 0.002
 );
 
 # [3] contributions of skull only
@@ -319,7 +343,9 @@ plot(
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
     output_path = OUTPUT_DIR,
-    file_name = "contributions_of_skull_tissues.pdf"
+    file_name = "contributions_of_skull_tissues.pdf",
+    y_axis_min = 0,
+    y_axis_max = 0.002
 );
 
 # [4] contributions of CSF only
@@ -337,7 +363,9 @@ plot(
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
     output_path = OUTPUT_DIR,
-    file_name = "contributions_of_csf_tissues.pdf"
+    file_name = "contributions_of_csf_tissues.pdf",
+    y_axis_min = 0,
+    y_axis_max = 0.002
 );
 
 # [5] contributions of GM only
@@ -355,7 +383,9 @@ plot(
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
     output_path = OUTPUT_DIR,
-    file_name = "contributions_of_gm_tissues.pdf"
+    file_name = "contributions_of_gm_tissues.pdf",
+    y_axis_min = 0,
+    y_axis_max = 0.002
 );
 
 # [6] contributions of WM
@@ -373,7 +403,9 @@ plot(
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
     output_path = OUTPUT_DIR,
-    file_name = "contributions_of_wm_tissues.pdf"
+    file_name = "contributions_of_wm_tissues.pdf",
+    y_axis_min = 0,
+    y_axis_max = 0.002
 );
 
 # [7] contributions of WMLs only
@@ -391,7 +423,9 @@ plot(
     y_axis_title = "Share of total variance",
     x_axis_title = "Sobol index",
     output_path = OUTPUT_DIR,
-    file_name = "contributions_of_lesioned_tissues.pdf"
+    file_name = "contributions_of_lesioned_tissues.pdf",
+    y_axis_min = 0,
+    y_axis_max = 0.002
 );
 
 # [8] mean electrical field strength
@@ -409,7 +443,9 @@ plot(
     y_axis_title = "Electrical field strength",
     x_axis_title = "",
     output_path = OUTPUT_DIR,
-    file_name = "electrical_field_strength.pdf"
+    file_name = "electrical_field_strength.pdf",
+    y_axis_min = 0,
+    y_axis_max = 0.002
 );
 
 # [9] variance of electrical field strength
@@ -427,5 +463,7 @@ plot(
     y_axis_title = "Variance of the electrical field strength",
     x_axis_title = "",
     output_path = OUTPUT_DIR,
-    file_name = "variance.pdf"
+    file_name = "variance.pdf",
+    y_axis_min = 0,
+    y_axis_max = 0.002
 );

@@ -102,7 +102,7 @@ class WMLSensitivityAnalysis:
         print( "(3) WRITE POSTPORCESSED DATA AS OF FIELD" )
         structures = np.array(["scalp", "skull", "csf", "gm", "wm"])
         if withLesion:
-            structures.append("lesion")
+            structures = np.append(structures,["lesion"])
 
         print("Output will contain Sobol Indices of the following structures:", structures)
 
@@ -254,7 +254,7 @@ def main(argv):
     print("Output files:", output_file)
     if simulation_base_folder is not None and output_file is not None:
         sim = WMLSensitivityAnalysis(simulation_base_folder,output_file)
-        sim.run(withLesion=False)
+        sim.run(withLesion=True)
     else:
         print("Invalid input parameters!")
         printHelpText()
